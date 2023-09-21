@@ -5,6 +5,9 @@ from django.contrib import messages
 from django.contrib.messages import constants
 from django.urls import reverse
 from django.contrib import auth 
+import re
+from zxcvbn import zxcvbn
+
 
 def cadastro(request):
     if request.method=="GET":
@@ -16,19 +19,39 @@ def cadastro(request):
        senha=request.POST.get('senha')
        confirmar_senha=request.POST.get('confirmar_senha')
        
+        # Verifica se as senhas coincidem
        if not senha==confirmar_senha:
            
            messages.add_message(request,constants.ERROR, 'As senha nao coincidem.')
            return redirect(reverse('cadastro'))
         
-       
-    #TODO:validar forca da senha 
+    # Verifica a força da senha
+    if len(senha) < 8:
+            messages.add_message(request, constants.ERROR, 'A senha deve ter pelo menos 8 caracteres.')
+            return redirect(reverse('cadastro'))
+        
+        
+    elif not re.search('[a-záàâãéèêíïóôõöúüç]', senha):
+            messages.add_message(request, constants.ERROR, 'Senha deve conter pelo menos uma letra minúscula.')
+            return redirect(reverse('cadastro'))
+        
+    elif not re.search('[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÜÇ]', senha):
+            messages.add_message(request, constants.ERROR, 'Senha deve conter pelo menos uma letra maiúscula.')
+            return redirect(reverse('cadastro'))
+        
+    elif not re.search('[^a-zA-Z0-9áàâãéèêíïóôõöúüçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÜÇ]', senha):
+            messages.add_message(request, constants.ERROR, 'Senha deve conter pelo menos um caractere especial.')
+            return redirect(reverse('cadastro'))
+     #para avaliar se senha e fraca ou nao    
     
+        
+    # Verifica se o usuário já existe
     user= User.objects.filter(username=username)
     if user.exists():
         messages.add_message(request,constants.ERROR, 'O usuario ja existes.')
         return redirect(reverse('cadastro'))
     
+    # Cria o usuário
     user=User.objects.create_user(username=username,email=email,password=senha)
     messages.add_message(request,constants.SUCCESS, 'Usuario salvo com sucesso.')
     return  redirect(reverse('login'))
